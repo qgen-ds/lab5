@@ -68,7 +68,6 @@ public class RecIntegral implements Serializable {
     }
     public double Calc()
     {
-        //double res = 0;
         result = 0.0;
         double x1 = lower_end;
         double x2 = x1;
@@ -90,10 +89,4 @@ public class RecIntegral implements Serializable {
                 + "\t\"index\" : " + Integer.toString(index) + "\n"
                 + "}\n";
     }
-//    public static RecIntegral FromJson()
-//    {
-//        RecIntegral ret = null;
-//        
-//        return ret;
-//    }
 }

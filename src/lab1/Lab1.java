@@ -14,9 +14,7 @@ public class Lab1 {
     /**
      * @param args the command line arguments
      */
-    public static int count;
     public static void main(String[] args) {
-        count = 0;
         my.ui.NewJFrame wnd = new my.ui.NewJFrame();
         wnd.pack();
         wnd.setVisible(true);

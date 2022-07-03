@@ -7,9 +7,10 @@ package my.ui;
 import java.util.*;
 import lab1.RecIntegral;
 import java.io.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.nio.file.*;
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  *
@@ -17,12 +18,14 @@ import java.util.stream.Collectors;
  */
 public class NewJFrame extends javax.swing.JFrame {
 
-    LinkedList<RecIntegral> L;
+    private LinkedList<RecIntegral> L;
+    private String currentDir;
     /**
      * Creates new form NewJFrame
      */
     public NewJFrame() {
         L = new LinkedList<>();
+        currentDir = Paths.get("").toAbsolutePath().toString();
         initComponents();
     }
 
@@ -357,9 +360,14 @@ public class NewJFrame extends javax.swing.JFrame {
         // Save as text
         FileWriter writer = null;
         Iterator it = L.iterator();
+        JFileChooser chooser = new JFileChooser(currentDir);
+        chooser.setFileFilter(new FileNameExtensionFilter("Plain text files", "txt"));
+        int retval = chooser.showSaveDialog(this);
+        if(retval != JFileChooser.APPROVE_OPTION)
+            return;    
         try
         {
-           writer = new FileWriter("data.txt");
+           writer = new FileWriter(chooser.getSelectedFile().getName());
            writer.write("[\n");
            while(it.hasNext())
            {
@@ -378,10 +386,15 @@ public class NewJFrame extends javax.swing.JFrame {
         // Save as binary
         Iterator it = L.iterator();
         ObjectOutputStream out = null;
+        JFileChooser chooser = new JFileChooser(currentDir);
+        chooser.setFileFilter(new FileNameExtensionFilter("Serialized files", "ser"));
+        int retval = chooser.showSaveDialog(this);
+        if(retval != JFileChooser.APPROVE_OPTION)
+            return;    
         try
         {
             out = new ObjectOutputStream(new BufferedOutputStream(
-                new FileOutputStream("RecIntegral.ser")));
+                new FileOutputStream(chooser.getSelectedFile().getName())));
             while(it.hasNext())
             {
                 out.writeObject(it.next());
@@ -397,12 +410,16 @@ public class NewJFrame extends javax.swing.JFrame {
     private void jButton8MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton8MouseClicked
         // Load as text
         FileReader reader = null;
-        File file = new File("data.txt");
-        char[] buf = new char[(int)file.length()];
+        JFileChooser chooser = new JFileChooser(currentDir);
+        chooser.setFileFilter(new FileNameExtensionFilter("Plain text files", "txt"));
+        int retval = chooser.showOpenDialog(this);
+        if(retval != JFileChooser.APPROVE_OPTION)
+            return;
+        char[] buf = new char[(int)chooser.getSelectedFile().length()];
         L.clear();
         try
         {
-           reader = new FileReader(file);
+           reader = new FileReader(chooser.getSelectedFile());
            reader.read(buf);
            reader.close();
         }
@@ -430,10 +447,15 @@ public class NewJFrame extends javax.swing.JFrame {
         // Load as binary
         BufferedInputStream istream = null;
         ObjectInputStream in = null;
+        JFileChooser chooser = new JFileChooser(currentDir);
+        chooser.setFileFilter(new FileNameExtensionFilter("Serialized files", "ser"));
+        int retval = chooser.showOpenDialog(this);
+        if(retval != JFileChooser.APPROVE_OPTION)
+            return;
         L.clear();
         try
         {
-            istream = new BufferedInputStream(new FileInputStream("RecIntegral.ser"));
+            istream = new BufferedInputStream(new FileInputStream(chooser.getSelectedFile().getName()));
             in = new ObjectInputStream(istream);
             while(istream.available() > 0)
             {
