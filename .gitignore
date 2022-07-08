@@ -71,4 +71,4 @@ dkms.conf
 *.doc?
 *.ser
 data.txt
-/dist/
+dist/

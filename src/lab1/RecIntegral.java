@@ -6,17 +6,76 @@
 package lab1;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 /**
  *
  * @author student
  */
 public class RecIntegral implements Serializable {
     private static final long serialVersionUID = 6529685098267757690L;
+    private final int THREAD_COUNT = 6;
     private double lower_end;
     private double upper_end;
     private double step;
-    private double result;
+    private volatile double result;
     private int index;
+    private transient ArrayList<Worker> workers;
+    private transient CyclicBarrier barrier;
+    
+    class CurrentStep
+    {
+        private double x1;
+        private double x2;
+        CurrentStep(double le)
+        {
+            x1 = le;
+            x2 = le + step;
+        }
+    }
+    
+    class Worker implements Runnable
+    {
+        private final ReentrantLock locker;
+        private final CurrentStep cs;
+        Worker(CurrentStep cs, ReentrantLock lock)
+        {
+            this.cs = cs;
+            locker = lock;
+        }
+        private double f(double x)
+        {
+            return Math.sqrt(x);
+        }
+        @Override
+        public void run()
+        {
+            for(;;)
+            {
+                locker.lock();
+                try
+                {
+                    if(cs.x2 > upper_end)
+                        break;
+                    result += (f(cs.x2) + f(cs.x1)) * step / 2;
+                    cs.x1 = cs.x2;
+                    cs.x2 += step;
+                }
+                finally
+                {
+                    locker.unlock();
+                }
+            }
+            try
+            {   
+                barrier.await();
+            }
+            catch (InterruptedException | BrokenBarrierException ex)
+            {
+                ex.printStackTrace();
+            }
+        }    
+    }
     public RecIntegral()
     {
         Init(0.0, 0.0, 0.0, 0.0, 0);
@@ -41,6 +100,23 @@ public class RecIntegral implements Serializable {
         step = s;
         result = r;
         index = i;
+        workers = new ArrayList<>();
+        // CurrentStep можно создавать только после инициализации step
+        CurrentStep cs = new CurrentStep(le);
+        ReentrantLock lock = new ReentrantLock(true);
+        /* По какой-то причине нормальная инициализация списка
+        через capacity + метод .forEach() не работает,
+        поэтому придётся делать дедовским способом */
+        for(int c = 0; c < THREAD_COUNT; c++)
+        {
+            workers.add(new Worker(cs, lock));
+        }
+        barrier = new CyclicBarrier(THREAD_COUNT, () -> {
+            synchronized(barrier)
+            {
+                barrier.notify();
+            }
+        });
     }
     public int index()
     {
@@ -62,20 +138,27 @@ public class RecIntegral implements Serializable {
     {
         return result;
     }
-    public static double F(double x)
-    {
-        return Math.sqrt(x);
-    }
     public double Calc()
     {
-        result = 0.0;
-        double x1 = lower_end;
-        double x2 = x1;
-        while(x2 < upper_end)
+        //TODO: заменить на более лучший вармант пропуска вычислений
+        if(result != 0.0)
         {
-            x2 = x1 + step;
-            result += (F(x2) + F(x1)) * step / 2;
-            x1 = x2;
+            return result;
+        }
+        for(int i = 0; i < THREAD_COUNT; i++)
+        {
+            new Thread(workers.get(i)).start();
+        }
+        try
+        {
+            synchronized(barrier)
+            {
+                barrier.wait();
+            }
+        }
+        catch(InterruptedException ex)
+        {
+            ex.printStackTrace();
         }
         return result;
     }
