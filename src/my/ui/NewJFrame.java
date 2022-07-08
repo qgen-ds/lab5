@@ -315,19 +315,19 @@ public class NewJFrame extends javax.swing.JFrame {
     private void jButton3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton3MouseClicked
         for(int i = 0; i < jTable1.getRowCount(); i++)
         {
-           Object s = jTable1.getValueAt(i, 2);
-           if((double)s == 0.0)
-           {
-               JOptionPane.showMessageDialog(null, "Step field is 0.0!", "Warning", JOptionPane.WARNING_MESSAGE);
-               return;
-           }
            Object le = jTable1.getValueAt(i, 0);
            Object ue = jTable1.getValueAt(i, 1);
+           Object s = jTable1.getValueAt(i, 2);
            if(le != null && ue != null && s != null)
            {
-                RecIntegral ri = new RecIntegral((double)le, (double)ue, (double)s, i);
-                jTable1.setValueAt(ri.Calc(), i, 3);
-                L.addLast(ri);
+               if((double)s == 0.0)
+                   JOptionPane.showMessageDialog(null, "Step field is 0.0!", "Warning", JOptionPane.WARNING_MESSAGE);
+               else
+               {
+                   RecIntegral ri = new RecIntegral((double)le, (double)ue, (double)s, i);
+                   jTable1.setValueAt(ri.Calc(), i, 3);
+                   L.addLast(ri);
+               }
            }
         }
     }//GEN-LAST:event_jButton3MouseClicked

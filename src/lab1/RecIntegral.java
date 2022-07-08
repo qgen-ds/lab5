@@ -20,7 +20,6 @@ public class RecIntegral implements Serializable {
     private double step;
     private volatile double result;
     private int index;
-    private transient ArrayList<Worker> workers;
     private transient CyclicBarrier barrier;
     
     class CurrentStep
@@ -50,6 +49,8 @@ public class RecIntegral implements Serializable {
         @Override
         public void run()
         {
+            /* Spaghetti code warning */
+            double l_x1, l_x2, res;
             for(;;)
             {
                 locker.lock();
@@ -57,7 +58,8 @@ public class RecIntegral implements Serializable {
                 {
                     if(cs.x2 > upper_end)
                         break;
-                    result += (f(cs.x2) + f(cs.x1)) * step / 2;
+                    l_x1 = cs.x1;
+                    l_x2 = cs.x2;
                     cs.x1 = cs.x2;
                     cs.x2 += step;
                 }
@@ -65,6 +67,8 @@ public class RecIntegral implements Serializable {
                 {
                     locker.unlock();
                 }
+                res = (f(l_x2) + f(l_x1)) * step / 2;
+                result += res;
             }
             try
             {   
@@ -100,17 +104,6 @@ public class RecIntegral implements Serializable {
         step = s;
         result = r;
         index = i;
-        workers = new ArrayList<>();
-        // CurrentStep можно создавать только после инициализации step
-        CurrentStep cs = new CurrentStep(le);
-        ReentrantLock lock = new ReentrantLock(true);
-        /* По какой-то причине нормальная инициализация списка
-        через capacity + метод .forEach() не работает,
-        поэтому придётся делать дедовским способом */
-        for(int c = 0; c < THREAD_COUNT; c++)
-        {
-            workers.add(new Worker(cs, lock));
-        }
         barrier = new CyclicBarrier(THREAD_COUNT, () -> {
             synchronized(barrier)
             {
@@ -140,14 +133,14 @@ public class RecIntegral implements Serializable {
     }
     public double Calc()
     {
-        //TODO: заменить на более лучший вармант пропуска вычислений
+        //TODO: заменить на более лучший вариант пропуска вычислений
         if(result != 0.0)
-        {
             return result;
-        }
+        CurrentStep cs = new CurrentStep(lower_end);
+        ReentrantLock lock = new ReentrantLock(true);
         for(int i = 0; i < THREAD_COUNT; i++)
         {
-            new Thread(workers.get(i)).start();
+            new Thread(new Worker(cs, lock)).start();
         }
         try
         {
